@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0f">
+<title>Scheda Allenamento</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c26;
+    --border: #2a2a38;
+    --accent: #e94560;
+    --accent2: #4a90e2;
+    --green: #2ecc71;
+    --amber: #f39c12;
+    --purple: #9b59b6;
+    --text: #f0f0f5;
+    --text2: #8888aa;
+    --radius: 14px;
+    --font: -apple-system, 'SF Pro Display', 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; overflow-x: hidden; }
+
+  /* HOME */
+  .home { display: flex; flex-direction: column; min-height: 100vh; padding: 24px 20px; }
+  .logo { text-align: center; margin-bottom: 32px; padding-top: 16px; }
+  .logo-icon { font-size: 48px; margin-bottom: 8px; }
+  .logo h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+  .logo p { color: var(--text2); font-size: 13px; margin-top: 4px; }
+
+  .day-cards { display: flex; flex-direction: column; gap: 12px; }
+  .day-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; cursor: pointer; transition: transform .15s, border-color .15s; display: flex; align-items: center; gap: 16px; }
+  .day-card:active { transform: scale(0.97); }
+  .day-card.a { border-left: 4px solid var(--accent); }
+  .day-card.b { border-left: 4px solid var(--accent2); }
+  .day-card.c { border-left: 4px solid var(--purple); }
+  .day-card.warm { border-left: 4px solid var(--amber); }
+  .day-card.mob { border-left: 4px solid var(--green); }
+  .day-emoji { font-size: 32px; }
+  .day-info h2 { font-size: 17px; font-weight: 600; }
+  .day-info p { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .day-count { margin-left: auto; background: var(--surface2); border-radius: 8px; padding: 4px 10px; font-size: 12px; color: var(--text2); white-space: nowrap; }
+
+  /* SESSION */
+  .session { display: none; flex-direction: column; min-height: 100vh; }
+  .session.active { display: flex; }
+
+  .session-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 20px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 10; }
+  .back-btn { background: var(--surface2); border: none; color: var(--text); border-radius: 10px; padding: 8px 14px; font-size: 14px; cursor: pointer; }
+  .session-title { flex: 1; }
+  .session-title h2 { font-size: 16px; font-weight: 600; }
+  .session-timer { font-size: 13px; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+  .progress-bar { height: 3px; background: var(--border); }
+  .progress-fill { height: 100%; background: var(--accent); transition: width .3s; }
+
+  .exercises-list { flex: 1; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+
+  .ex-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border-color .2s; }
+  .ex-card.active-ex { border-color: var(--accent); }
+  .ex-card.done-ex { opacity: 0.5; }
+
+  .ex-header { padding: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .ex-number { width: 32px; height: 32px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--text2); flex-shrink: 0; }
+  .ex-number.done { background: var(--green); color: #fff; }
+  .ex-info { flex: 1; }
+  .ex-info h3 { font-size: 15px; font-weight: 600; }
+  .ex-info p { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .ex-badge { background: var(--surface2); border-radius: 8px; padding: 4px 10px; font-size: 12px; color: var(--text2); white-space: nowrap; }
+
+  .ex-body { padding: 0 16px 16px; display: none; }
+  .ex-body.open { display: block; }
+
+  .ex-figure { margin-bottom: 14px; }
+  .ex-desc { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 12px; }
+  .ex-tip { font-size: 12px; color: var(--accent); line-height: 1.5; padding: 10px; background: rgba(233,69,96,0.08); border-radius: 8px; border-left: 3px solid var(--accent); margin-bottom: 14px; }
+
+  .series-tracker { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .serie-btn { flex: 1; min-width: 60px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text2); font-size: 13px; font-weight: 600; padding: 12px 8px; cursor: pointer; transition: all .2s; text-align: center; }
+  .serie-btn.completed { background: var(--green); border-color: var(--green); color: #fff; }
+  .serie-btn:active { transform: scale(0.95); }
+
+  /* TIMER RIPOSO */
+  .rest-overlay { position: fixed; inset: 0; background: rgba(10,10,15,0.97); z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+  .rest-overlay.active { display: flex; }
+  .rest-title { font-size: 18px; color: var(--text2); margin-bottom: 8px; }
+  .rest-exercise { font-size: 22px; font-weight: 700; margin-bottom: 32px; }
+  .rest-circle { width: 180px; height: 180px; border-radius: 50%; border: 4px solid var(--border); display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 32px; }
+  .rest-svg { position: absolute; top: -4px; left: -4px; width: 188px; height: 188px; transform: rotate(-90deg); }
+  .rest-circle-bg { fill: none; stroke: var(--border); stroke-width: 4; }
+  .rest-circle-fill { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset .9s linear; }
+  .rest-seconds { font-size: 52px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+  .rest-label { font-size: 14px; color: var(--text2); margin-top: 4px; }
+  .rest-skip { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 12px; padding: 14px 32px; font-size: 16px; cursor: pointer; }
+
+  /* COMPLETE SCREEN */
+  .complete-screen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; text-align: center; }
+  .complete-screen.active { display: flex; }
+  .complete-emoji { font-size: 72px; margin-bottom: 16px; }
+  .complete-screen h2 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .complete-screen p { color: var(--text2); font-size: 15px; margin-bottom: 32px; }
+  .complete-stats { display: flex; gap: 16px; margin-bottom: 32px; }
+  .stat-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 24px; flex: 1; }
+  .stat-box .val { font-size: 24px; font-weight: 700; color: var(--accent); }
+  .stat-box .lbl { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  .home-btn { background: var(--accent); color: #fff; border: none; border-radius: 12px; padding: 16px 32px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; max-width: 320px; }
+
+  .section-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text2); margin: 8px 0 4px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div class="home" id="home">
+  <div class="logo">
+    <div class="logo-icon">💪</div>
+    <h1>Scheda Allenamento</h1>
+    <p>Scegli il giorno e inizia</p>
+  </div>
+  <div class="day-cards">
+    <div class="section-label">Allenamenti</div>
+    <div class="day-card a" onclick="startSession('A')">
+      <div class="day-emoji">🔴</div>
+      <div class="day-info">
+        <h2>Giorno A</h2>
+        <p>Petto · Spalle · Tricipiti</p>
+      </div>
+      <div class="day-count">6 esercizi</div>
+    </div>
+    <div class="day-card b" onclick="startSession('B')">
+      <div class="day-emoji">🔵</div>
+      <div class="day-info">
+        <h2>Giorno B</h2>
+        <p>Schiena · Bicipiti · Core</p>
+      </div>
+      <div class="day-count">5 esercizi</div>
+    </div>
+    <div class="day-card c" onclick="startSession('C')">
+      <div class="day-emoji">🟣</div>
+      <div class="day-info">
+        <h2>Giorno C</h2>
+        <p>Tecnico · Skill · Mobilità</p>
+      </div>
+      <div class="day-count">8 esercizi</div>
+    </div>
+    <div class="section-label" style="margin-top:12px">Routine</div>
+    <div class="day-card warm" onclick="startSession('W')">
+      <div class="day-emoji">🔥</div>
+      <div class="day-info">
+        <h2>Riscaldamento</h2>
+        <p>10 min · Prima di ogni allenamento</p>
+      </div>
+      <div class="day-count">10 esercizi</div>
+    </div>
+    <div class="day-card mob" onclick="startSession('M')">
+      <div class="day-emoji">🧘</div>
+      <div class="day-info">
+        <h2>Mobilità</h2>
+        <p>10-15 min · Dopo ogni allenamento</p>
+      </div>
+      <div class="day-count">10 stretch</div>
+    </div>
+  </div>
+</div>
+
+<!-- SESSION -->
+<div class="session" id="session">
+  <div class="session-header">
+    <button class="back-btn" onclick="goHome()">← Indietro</button>
+    <div class="session-title">
+      <h2 id="session-name">Giorno A</h2>
+      <div class="session-timer" id="session-timer">00:00</div>
+    </div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  <div class="exercises-list" id="exercises-list"></div>
+</div>
+
+<!-- COMPLETE -->
+<div class="complete-screen" id="complete-screen">
+  <div class="complete-emoji">🏆</div>
+  <h2>Allenamento completato!</h2>
+  <p>Ottimo lavoro. Ricordati di fare la mobilità post allenamento.</p>
+  <div class="complete-stats">
+    <div class="stat-box"><div class="val" id="stat-time">00:00</div><div class="lbl">Durata</div></div>
+    <div class="stat-box"><div class="val" id="stat-series">0</div><div class="lbl">Serie totali</div></div>
+  </div>
+  <button class="home-btn" onclick="goHome()">Torna alla home</button>
+</div>
+
+<!-- TIMER RIPOSO -->
+<div class="rest-overlay" id="rest-overlay">
+  <div class="rest-title">Riposo dopo</div>
+  <div class="rest-exercise" id="rest-ex-name">—</div>
+  <div class="rest-circle">
+    <svg class="rest-svg" viewBox="0 0 188 188">
+      <circle class="rest-circle-bg" cx="94" cy="94" r="90"/>
+      <circle class="rest-circle-fill" id="rest-circle-fill" cx="94" cy="94" r="90" stroke-dasharray="565" stroke-dashoffset="0"/>
+    </svg>
+    <div>
+      <div class="rest-seconds" id="rest-seconds">90</div>
+      <div class="rest-label">secondi</div>
+    </div>
+  </div>
+  <button class="rest-skip" onclick="skipRest()">Salta riposo</button>
+</div>
+
+<script>
+const CIRCUMFERENCE = 2 * Math.PI * 90;
+
+// SVG Stick Figures
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// DATI ESERCIZI
+const sessions = {
+  A: {
+    name: 'Giorno A — Petto · Spalle · Tricipiti',
+    exercises: [
+      { name: 'Pike push-up', badge: '2 × 8-10', attrezzo: 'Terra', rest: 60,
+        desc: 'Parti a V rovesciata con i glutei in alto. Piega i gomiti portando la testa verso il pavimento tra le mani. I gomiti vanno verso l\'esterno/indietro, non attaccati al corpo.',
+        tip: 'Fallo per primo finché hai energia. Aumenta le rip gradualmente.' },
+      { name: 'Dip verticali', badge: '3 × 6-8', attrezzo: 'Parallele alte', rest: 120,
+        desc: 'Impugna le parallele, corpo sospeso. Inclina il busto in avanti 30-40° per attivare il petto. Scendi a gomiti 90°, poi spingi su. Spalle abbassate lontano dalle orecchie.',
+        tip: '3 serie obbligatorie. Abbassa le rip se serve. Inclina avanti — se senti le braccia più del petto non sei abbastanza inclinato.' },
+      { name: 'Flessioni normali', badge: '2 × 10-12', attrezzo: 'Maniglie', rest: 60,
+        desc: 'Mani alla larghezza delle spalle, corpo dritto. Scendi con il petto quasi a terra, gomiti a 45°, poi spingi su. Schiena dritta.',
+        tip: 'Quando arrivi a 12 rip facili aggiungi una serie.' },
+      { name: 'Flessioni diamante', badge: '2 × 8-10', attrezzo: 'Maniglie', rest: 60,
+        desc: 'Mani vicine sotto il petto formando un triangolo con pollici e indici. Gomiti vicini al busto durante tutto il movimento. Scendi lento, spingi su.',
+        tip: 'Obiettivo 10 rip pulite. Se difficili falle con le ginocchia a terra.' },
+      { name: 'Alzate laterali', badge: '3 × 12-15', attrezzo: 'Manubri 3kg', rest: 60,
+        desc: 'In piedi, manubri ai fianchi. Solleva le braccia lateralmente fino alle spalle con gomiti leggermente piegati. Scendi lentamente. Zero slancio.',
+        tip: 'Gomito sempre leggermente piegato per evitare stress al tendine interno.' },
+      { name: 'Leg raise appeso', badge: '3 × 8-10', attrezzo: 'Power Tower', rest: 90,
+        desc: 'Rimani appeso, abbassa le spalle, contrai il core. Solleva le gambe tese orizzontali. Scendi lentamente senza dondolare.',
+        tip: 'Se sporchi il movimento piega le ginocchia temporaneamente. Migliorerà con la mobilità del Giorno C.' },
+    ]
+  },
+  B: {
+    name: 'Giorno B — Schiena · Bicipiti · Core',
+    exercises: [
+      { name: 'Trazioni presa larga', badge: '3 × 3-5', attrezzo: 'Power Tower', rest: 120,
+        desc: 'Impugna la sbarra larga. Abbassa le spalle PRIMA di iniziare, contrai il core. Gambe piegate e caviglie incrociate. Tira su fino al mento sopra la sbarra. Scendi lentamente.',
+        tip: 'Aggiungi 1 rep ogni 1-2 settimane. Mento sopra la sbarra = rep valida.' },
+      { name: 'Australian pull-up', badge: '2 × 10-12', attrezzo: 'Parallele alte', rest: 90,
+        desc: 'Sdraiato sotto le parallele alte, afferra le barre. Corpo dritto, tira il petto verso le barre. Più sei orizzontale più è difficile.',
+        tip: 'Regola la difficoltà con l\'inclinazione. Punta alla posizione più orizzontale possibile.' },
+      { name: 'Rematore bilaterale', badge: '2 × 10-12', attrezzo: 'Manubri 5kg', rest: 90,
+        desc: 'In piedi, busto inclinato a 45°, schiena dritta. Tieni entrambi i manubri e tirali verso i fianchi con i gomiti vicini al corpo. Torna giù lentamente.',
+        tip: 'Quando 5kg sono troppo leggeri aumenta il peso o aggiungi una serie.' },
+      { name: 'Curl con manubri', badge: '3 × cedimento', attrezzo: 'Manubri 5kg', rest: 60,
+        desc: 'In piedi, palmi verso l\'esterno. Piega i gomiti portando i manubri alle spalle. Gomiti fermi ai fianchi. Scendi lentamente. Vai fino al cedimento totale.',
+        tip: 'Cedimento = ultima rep impossibile. Prima serie ~15 rip, poi cala — è normale.' },
+      { name: 'Plank', badge: '3 × 60s', attrezzo: 'Terra', rest: 60,
+        desc: 'Avambracci e punte dei piedi a terra. Corpo perfettamente dritto. Non alzare il sedere né abbassare i fianchi. Core sempre contratto.',
+        tip: 'Prossimo obiettivo: plank con un braccio solo o piedi su sedia.' },
+    ]
+  },
+  C: {
+    name: 'Giorno C — Tecnico · Skill · Mobilità',
+    exercises: [
+      { name: 'Scapular pull-up', badge: '3 × 8-10', attrezzo: 'Power Tower', rest: 60,
+        desc: 'Appeso alla sbarra a braccia tese. Senza piegare i gomiti, spingi le scapole verso il basso e senti il corpo salire leggermente. Torna. Micro-movimento fondamentale.',
+        tip: 'Risolve il problema del bacino in avanti durante le trazioni. Fallo sempre.' },
+      { name: 'L-sit progression', badge: '3 × 10-20s', attrezzo: 'Parallele alte', rest: 90,
+        desc: 'Siediti tra le parallele, impugna le barre, spingi giù e solleva il corpo. Gambe piegate per iniziare (tuck L-sit). Tieni la posizione.',
+        tip: 'Inizia con il tuck. Quando tieni 20 sec prova ad estendere una gamba alla volta.' },
+      { name: 'Handstand prep — Pike hold', badge: '3 × 20-30s', attrezzo: 'Terra + sedia', rest: 60,
+        desc: 'Mani a terra, piedi su una sedia alle spalle. Porta i fianchi sopra le mani formando una L. Testa tra le braccia, core contratto.',
+        tip: 'Quando tieni 30 sec muovi i piedi più in alto. Poi prova a sollevare una gamba.' },
+      { name: 'Hollow body hold', badge: '3 × 20-30s', attrezzo: 'Terra', rest: 60,
+        desc: 'Sdraiato, braccia tese sopra la testa, gambe tese sollevate. Schiena piatta a terra, core compresso. Base del calisthenics.',
+        tip: 'Se troppo difficile piega le ginocchia. Migliora il leg raise appeso.' },
+      { name: '90/90 stretch', badge: '2 × 60s per lato', attrezzo: 'Terra', rest: 30,
+        desc: 'Siediti con entrambe le gambe a 90°. Busto dritto. Migliora rotazione interna ed esterna dell\'anca.',
+        tip: 'Fondamentale per il leg raise appeso. Non rimbalzare mai.' },
+      { name: 'Couch stretch', badge: '2 × 60s per lato', attrezzo: 'Terra + muro', rest: 30,
+        desc: 'Ginocchio posteriore a terra, piede appoggiato al muro. Spingi il bacino avanti. Il migliore per aprire i flessori dell\'anca.',
+        tip: 'Senti lo stretch nella parte anteriore della coscia e dell\'anca.' },
+      { name: 'Pike stretch', badge: '2 × 60s', attrezzo: 'Terra', rest: 30,
+        desc: 'Seduto a terra, gambe tese, cerca di toccare le punte dei piedi. Tieni 60 sec. Fondamentale per il leg raise pulito e l\'L-sit.',
+        tip: 'Non rimbalzare. Respira e rilassati nella posizione.' },
+      { name: 'Chest opener', badge: '2 × 60s', attrezzo: 'Terra', rest: 30,
+        desc: 'Sdraiato su un asciugamano arrotolato tra le scapole, braccia aperte ai lati. Apre il torace e migliora la postura.',
+        tip: 'Respira profondo e lascia che la gravità apra il petto.' },
+    ]
+  },
+  W: {
+    name: 'Riscaldamento — 10 minuti',
+    exercises: [
+      { name: 'Jumping jack', badge: '1 min', attrezzo: 'Terra', rest: 0,
+        desc: 'Inizia lentamente poi aumenta il ritmo. Alza la frequenza cardiaca e scalda tutto il corpo.',
+        tip: 'Parti leggero, i primi 20 sec lenti poi vai al ritmo normale.' },
+      { name: 'Rotazioni collo', badge: '1 min', attrezzo: 'Terra', rest: 0,
+        desc: '5 cerchi lenti in senso orario, 5 antiorario. Non forzare mai.', tip: 'Lento e controllato sempre.' },
+      { name: 'Rotazioni spalle', badge: '1 min', attrezzo: 'Terra', rest: 0,
+        desc: 'Braccia lungo i fianchi, cerchi ampi con le spalle. 10 in avanti, 10 indietro.', tip: 'Più ampi possibile.' },
+      { name: 'Rotazioni polsi', badge: '1 min', attrezzo: 'Terra', rest: 0,
+        desc: 'Braccia tese davanti, ruota i polsi in entrambe le direzioni. Fondamentale prima di flessioni e dip.', tip: 'Non saltarlo mai.' },
+      { name: 'Cerchi con le braccia', badge: '1 min', attrezzo: 'Terra', rest: 0,
+        desc: 'Braccia tese lateralmente, cerchi piccoli poi grandi. 15 avanti, 15 indietro.', tip: 'Aumenta ampiezza gradualmente.' },
+      { name: 'Rotazioni anche', badge: '1 min', attrezzo: 'Terra', rest: 0,
+        desc: 'Mani sui fianchi, cerchi ampi con il bacino come un hula hoop. 10 per lato.', tip: 'Scioglie le anche prima del Giorno C.' },
+      { name: 'Leg swing', badge: '1 min', attrezzo: 'Muro', rest: 0,
+        desc: 'Appoggiati al muro, oscilla la gamba avanti e indietro come un pendolo. 15 per gamba.', tip: 'Scalda i flessori dell\'anca.' },
+      { name: 'Squat profondi lenti', badge: '10 rip', attrezzo: 'Terra', rest: 0,
+        desc: 'Scendi il più in basso possibile lentamente, tieni 2 sec in basso, risali.', tip: 'Scalda gambe, anche e colonna.' },
+      { name: 'Flessioni leggere', badge: '10-15 rip', attrezzo: 'Terra', rest: 0,
+        desc: '10-15 flessioni lente a metà del tuo massimo. Attiva petto, spalle e tricipiti.', tip: 'Solo per attivazione — non fare il massimo.' },
+      { name: 'Dead hang', badge: '30-60s', attrezzo: 'Power Tower', rest: 0,
+        desc: 'Rimani appeso alla sbarra con le braccia tese. Decomprime la schiena e attiva la presa.', tip: 'Abbassa le spalle e respira.' },
+    ]
+  },
+  M: {
+    name: 'Mobilità post allenamento',
+    exercises: [
+      { name: 'Shoulder cross stretch', badge: '30s × 2 lati', attrezzo: 'Terra', rest: 0,
+        desc: 'Braccio attraverso il petto, tienilo con l\'altro braccio. 30 sec per lato.', tip: 'Sempre dopo i dip e le flessioni.' },
+      { name: 'Tricep overhead stretch', badge: '30s × 2 lati', attrezzo: 'Terra', rest: 0,
+        desc: 'Braccio piegato dietro la testa, spingi il gomito verso il basso con l\'altra mano. 30 sec per lato.', tip: 'Busto dritto durante lo stretch.' },
+      { name: 'Chest opener', badge: '45s', attrezzo: 'Terra', rest: 0,
+        desc: 'Appoggia gli avambracci allo stipite della porta, spingi il petto avanti. 45 sec.', tip: 'Dopo ogni Giorno A.' },
+      { name: "Child's pose", badge: '60s', attrezzo: 'Terra', rest: 0,
+        desc: 'In ginocchio, braccia tese avanti a terra, fronte sul pavimento. 60 sec.', tip: 'Decomprime tutta la schiena.' },
+      { name: 'Bicep wall stretch', badge: '30s × 2 lati', attrezzo: 'Muro', rest: 0,
+        desc: 'Mano a parete con il pollice verso il basso, gira il corpo dall\'altra parte. 30 sec per lato.', tip: 'Dopo ogni Giorno B.' },
+      { name: 'Couch stretch', badge: '45s × 2 lati', attrezzo: 'Terra + muro', rest: 0,
+        desc: 'Ginocchio a terra, piede al muro. 45 sec per lato. Fondamentale dopo ogni allenamento.', tip: 'Il migliore per i flessori dell\'anca.' },
+      { name: 'Calf stretch al muro', badge: '30s × 2 lati', attrezzo: 'Muro', rest: 0,
+        desc: 'Mani al muro, piede posteriore a terra con tallone fisso, spingi il tallone verso terra. 30 sec per lato.', tip: 'Tallone sempre a terra.' },
+      { name: 'Wrist flexor stretch', badge: '30s × 2 lati', attrezzo: 'Terra', rest: 0,
+        desc: 'Braccio teso, palmo verso l\'alto, spingi le dita verso il basso con l\'altra mano. 30 sec per lato.', tip: 'Non saltarlo mai dopo flessioni e dip.' },
+      { name: 'Figure four stretch', badge: '45s × 2 lati', attrezzo: 'Terra', rest: 0,
+        desc: 'Sdraiato, caviglia su ginocchio opposto, tira la coscia verso il petto. 45 sec per lato.', tip: 'Ottimo per i glutei e le anche.' },
+      { name: 'Hamstring stretch', badge: '45s × 2 lati', attrezzo: 'Terra', rest: 0,
+        desc: 'Sdraiato, gamba tesa verso il soffitto, tienila con le mani. 45 sec per lato.', tip: 'Non rimbalzare. Respira e rilassati.' },
+    ]
+  }
+};
+
+// STATE
+let currentSession = null;
+let sessionStart = null;
+let timerInterval = null;
+let completedSeries = {};
+let restTimer = null;
+let restRemaining = 0;
+let restTotal = 0;
+
+function goHome() {
+  document.getElementById('home').style.display = 'flex';
+  document.getElementById('session').classList.remove('active');
+  document.getElementById('complete-screen').classList.remove('active');
+  clearInterval(timerInterval);
+  clearInterval(restTimer);
+  document.getElementById('rest-overlay').classList.remove('active');
+}
+
+function startSession(day) {
+  currentSession = day;
+  completedSeries = {};
+  sessionStart = Date.now();
+  const s = sessions[day];
+  document.getElementById('session-name').textContent = s.name;
+  document.getElementById('home').style.display = 'none';
+  document.getElementById('session').classList.add('active');
+  document.getElementById('complete-screen').classList.remove('active');
+  renderExercises(s);
+  clearInterval(timerInterval);
+  timerInterval = setInterval(updateTimer, 1000);
+  updateProgress();
+}
+
+function updateTimer() {
+  const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+  const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+  const s2 = (elapsed % 60).toString().padStart(2, '0');
+  document.getElementById('session-timer').textContent = m + ':' + s2;
+}
+
+function renderExercises(s) {
+  const list = document.getElementById('exercises-list');
+  list.innerHTML = '';
+  s.exercises.forEach((ex, i) => {
+    const numSeries = parseInt(ex.badge) || 1;
+    const seriesBtns = Array.from({length: numSeries}, (_, j) => {
+      return `<button class="serie-btn" id="sb-${i}-${j}" onclick="completeSerie(${i},${j},'${ex.name}',${ex.rest})">Serie ${j+1}</button>`;
+    }).join('');
+
+    const card = document.createElement('div');
+    card.className = 'ex-card';
+    card.id = `ex-card-${i}`;
+    card.innerHTML = `
+      <div class="ex-header" onclick="toggleEx(${i})">
+        <div class="ex-number" id="ex-num-${i}">${i+1}</div>
+        <div class="ex-info">
+          <h3>${ex.name}</h3>
+          <p>${ex.attrezzo}</p>
+        </div>
+        <div class="ex-badge">${ex.badge}</div>
+      </div>
+      <div class="ex-body" id="ex-body-${i}">
+        <div class="ex-desc">${ex.desc}</div>
+        <div class="ex-tip">📈 ${ex.tip}</div>
+        <div class="series-tracker">${seriesBtns}</div>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+function toggleEx(i) {
+  const body = document.getElementById(`ex-body-${i}`);
+  body.classList.toggle('open');
+}
+
+function completeSerie(exIdx, serieIdx, exName, restSec) {
+  const btn = document.getElementById(`sb-${exIdx}-${serieIdx}`);
+  btn.classList.toggle('completed');
+  const key = `${exIdx}-${serieIdx}`;
+  if (btn.classList.contains('completed')) {
+    completedSeries[key] = true;
+    if (restSec > 0) startRest(restSec, exName);
+  } else {
+    delete completedSeries[key];
+  }
+  checkExerciseDone(exIdx);
+  updateProgress();
+}
+
+function checkExerciseDone(exIdx) {
+  const s = sessions[currentSession];
+  const ex = s.exercises[exIdx];
+  const numSeries = parseInt(ex.badge) || 1;
+  let allDone = true;
+  for (let j = 0; j < numSeries; j++) {
+    if (!completedSeries[`${exIdx}-${j}`]) { allDone = false; break; }
+  }
+  const num = document.getElementById(`ex-num-${exIdx}`);
+  const card = document.getElementById(`ex-card-${exIdx}`);
+  if (allDone) { num.classList.add('done'); num.textContent = '✓'; card.classList.add('done-ex'); }
+  else { num.classList.remove('done'); num.textContent = exIdx + 1; card.classList.remove('done-ex'); }
+}
+
+function updateProgress() {
+  const s = sessions[currentSession];
+  let total = 0, done = 0;
+  s.exercises.forEach((ex, i) => {
+    const n = parseInt(ex.badge) || 1;
+    total += n;
+    for (let j = 0; j < n; j++) { if (completedSeries[`${i}-${j}`]) done++; }
+  });
+  const pct = total > 0 ? (done / total) * 100 : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  if (pct >= 100) setTimeout(showComplete, 800);
+}
+
+function showComplete() {
+  clearInterval(timerInterval);
+  const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
+  const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+  const s2 = (elapsed % 60).toString().padStart(2, '0');
+  document.getElementById('stat-time').textContent = m + ':' + s2;
+  document.getElementById('stat-series').textContent = Object.keys(completedSeries).length;
+  document.getElementById('session').classList.remove('active');
+  document.getElementById('complete-screen').classList.add('active');
+}
+
+function startRest(seconds, exName) {
+  clearInterval(restTimer);
+  restRemaining = seconds;
+  restTotal = seconds;
+  document.getElementById('rest-ex-name').textContent = exName;
+  document.getElementById('rest-overlay').classList.add('active');
+  updateRestDisplay();
+  restTimer = setInterval(() => {
+    restRemaining--;
+    updateRestDisplay();
+    if (restRemaining <= 0) {
+      clearInterval(restTimer);
+      document.getElementById('rest-overlay').classList.remove('active');
+      try { const ctx = new AudioContext(); const o = ctx.createOscillator(); const g = ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value = 880; g.gain.setValueAtTime(0.3, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5); o.start(); o.stop(ctx.currentTime + 0.5); } catch(e) {}
+    }
+  }, 1000);
+}
+
+function updateRestDisplay() {
+  document.getElementById('rest-seconds').textContent = restRemaining;
+  const progress = 1 - (restRemaining / restTotal);
+  const offset = CIRCUMFERENCE * progress;
+  document.getElementById('rest-circle-fill').style.strokeDashoffset = offset;
+  document.getElementById('rest-circle-fill').style.strokeDasharray = CIRCUMFERENCE;
+}
+
+function skipRest() {
+  clearInterval(restTimer);
+  document.getElementById('rest-overlay').classList.remove('active');
+}
+</script>
+</body>
+</html>
